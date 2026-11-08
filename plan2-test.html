@@ -1,0 +1,255 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>اختبار المخطط الجديد</title>
+<style>body{margin:0;padding:14px;background:#12100c;color:#f4efe6;font:14px/1.7 system-ui,sans-serif}h1{font-size:17px;margin:0 0 10px;color:#E8D5A8}h2{font-size:14px;margin:18px 0 6px;color:#E8D5A8}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}label{display:block;font-size:12px;color:#a89f8d}select,button{width:100%;height:38px;border-radius:10px;border:1px solid #5a4a2a;background:#1c1810;color:#f4efe6;font:inherit}
+button{background:#C6A15B;color:#000;font-weight:700;border:0}input[type=range]{width:100%}#st{padding:10px;border-radius:10px;margin:10px 0;font-size:13px}.ok{background:#1d2b1d;border:1px solid #3d6b3d}.no{background:#33261a;border:1px solid #8a5a2a}svg{max-width:100%;height:auto}</style></head><body>
+<h1>اختبار PLAN2 (صفحة تجربة فقط، مش بتأثر على موقعك)</h1>
+<label>المساحة: <b id="av"></b> م²</label><input type="range" id="a" min="50" max="400" step="5" value="100">
+<div class="g">
+<div><label>عدد الغرف</label><select id="rooms"><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+<div><label>عدد الحمامات</label><select id="baths"><option>1</option><option>2</option><option>3</option></select></div>
+<div><label>المطبخ</label><select id="kitchen"><option value="open">مفتوح على الريسبشن</option><option value="closed">مقفول</option><option value="american">أمريكي</option></select></div>
+<div><label>شكل الريسبشن</label><select id="recep"><option value="open">مفتوح</option><option value="closed">مقفول</option><option value="living">مع ليفينج</option></select></div>
+<div><label>الماستر: دريسنج</label><select id="dress"><option value="0">لا</option><option value="1">نعم</option></select></div>
+<div><label>الماستر: حمام داخلي</label><select id="mbath"><option value="0">لا</option><option value="1">نعم</option></select></div>
+<div><label>حجم الماستر</label><select id="msize"><option value="normal">عادية</option><option value="big">كبيرة</option></select></div>
+<div><label>&nbsp;</label><button id="sg">اختيارات مقترحة للمساحة</button></div></div>
+<div id="st"></div><div id="nw"></div><h2>المخطط القديم (للمقارنة)</h2><div id="od"></div>
+<script>
+function K1(e){if(e<=80)return{rooms:"غرفتين",reception:"قطعة واحدة",bath:"حمام واحد",extra:"مطبخ أمريكي",note:"مثالي للشباب",layoutKey:"s80"};if(e<=130)return{rooms:"3 غرف",reception:"قطعتين",bath:"2 حمام",extra:"مطبخ + بلكونة",note:"الأكثر طلباً",layoutKey:"m130"};if(e<=220)return{rooms:"4 غرف + دريسنج",reception:"ريسبشن كبير 3 قطع",bath:"3 حمامات",extra:"مطبخ + غرفة خادمة",note:"فيلا شقة - خصوصية كاملة",layoutKey:"l180"};return{rooms:"5 غرف + دريسنج + مكتب",reception:"ريسبشن + ليفينج منفصل",bath:"4 حمامات",extra:"2 مطبخ + خادمة + روف",note:"دوبلكس / بنتهاوس",layoutKey:"xl"}}function PLAN(A){
+  var key=K1(A).layoutKey,ci={s80:0,m130:1,l180:2,xl:3}[key];
+  /* room: [id,type,label,x0,y0,x1,y1,short]  link: [from,to,"g"=open|"d"=door into 2nd].
+     Reception touches only the foyer (and kitchen); bedrooms/baths open on the private hall. Wet rooms: kitchen on the left wall, baths on the right wall. */
+  var T=[
+   {r:1.2,R:[["rec","rec","ريسبشن",0,.48,.42,1],["b1","bed","غرفة 1",0,0,.42,.48],["ba","bath","حمام",.42,0,.66,.30],["h","hall","ردهة",.42,.30,.66,.66],["f","foy","توزيع",.42,.66,.66,1],["b2","bed","غرفة 2",.66,0,1,.56],["k","kit","مطبخ",.66,.56,1,1]],
+    L:[["f","rec","g"],["f","h","d"],["f","k","d"],["h","b1","d"],["h","ba","d"],["h","b2","d"]]},
+   {r:1.25,R:[["rec","rec","ريسبشن",0,.50,.36,1],["k","kit","مطبخ",0,.22,.36,.50],["st","store","غسيل",0,0,.36,.22,"مخزن"],["b3","bed","غرفة 3",.36,0,.68,.28],["h","hall","ردهة",.36,.28,.68,.68],["f","foy","توزيع",.36,.68,.68,1],["ms","master","ماستر",.68,0,1,.36],["b2","bed","غرفة 2",.68,.36,1,.60],["ba","bath","حمام",.68,.60,1,.80],["din","sofra","سفرة",.68,.80,1,1]],
+    L:[["f","rec","g"],["f","h","d"],["f","din","g"],["h","b3","d"],["h","ms","d"],["h","b2","d"],["h","ba","d"],["h","k","d"],["k","st","d"],["rec","k","d"]]},
+   {r:1.3,R:[["rec","rec","ريسبشن كبير",0,.50,.36,1,"ريسبشن"],["k","kit","مطبخ",0,.28,.36,.50],["mj","maid","غرفة الخادمة",0,0,.36,.28,"خادمة"],["b4","bed","غرفة 4",.36,0,.66,.20],["h","hall","ردهة",.36,.20,.66,.68],["f","foy","توزيع",.36,.68,.66,1],["ms","master","ماستر",.66,0,1,.28],["b2","bed","غرفة 2",.66,.28,1,.46],["b3","bed","غرفة 3",.66,.46,1,.62],["ba","bath","حمام",.66,.62,1,.78],["gb","bath","حمام ضيوف",.66,.78,1,1,"حمام"]],
+    L:[["f","rec","g"],["f","h","d"],["f","gb","d"],["h","b4","d"],["h","ms","d"],["h","b2","d"],["h","b3","d"],["h","ba","d"],["h","k","d"],["k","mj","d"],["rec","k","d"]]},
+   {r:1.35,R:[["rec","rec","ريسبشن + ليفينج",0,.50,.34,1,"ريسبشن"],["k","kit","مطبخ",0,.30,.34,.50],["mj","maid","غرفة الخادمة",0,0,.34,.30,"خادمة"],["b4","bed","غرفة 4",.34,0,.50,.18],["b5","bed","غرفة 5",.50,0,.66,.18],["h","hall","ردهة",.34,.18,.66,.72],["f","foy","توزيع",.34,.72,.66,1],["ms","master","ماستر",.66,0,1,.26],["b2","bed","غرفة 2",.66,.26,1,.44],["b3","bed","غرفة 3",.66,.44,1,.62],["ba","bath","حمام",.66,.62,1,.76],["gb","bath","حمام ضيوف",.66,.76,1,.88,"حمام"],["din","sofra","سفرة",.66,.88,1,1]],
+    L:[["f","rec","g"],["f","h","d"],["f","gb","d"],["f","din","g"],["h","b4","d"],["h","b5","d"],["h","ms","d"],["h","b2","d"],["h","b3","d"],["h","ba","d"],["h","k","d"],["k","mj","d"],["rec","k","d"]]}
+  ][ci];
+  var W=Math.round(Math.sqrt(A*T.r)*10)/10,D=Math.round(A/W*10)/10;
+  var fX=ci===1||ci===3,fY=ci>=2,R=[],ID={},doors=[],ov=null,E=0.03,miss=0;
+  T.R.forEach(function(q){var x=q[3]*W,w=(q[5]-q[3])*W,y=q[4]*D,h=(q[6]-q[4])*D;
+    var r={id:q[0],t:q[1],l:q[2],s:q[7],w:w,h:h,x:fX?W-x-w:x,y:fY?D-y-h:y};R.push(r);ID[r.id]=r});
+  var rec=ID.rec,hall=ID.h,foy=ID.f,ms=R.filter(function(r){return r.t==="master"})[0];
+  var adj=function(a,b){var lo,hi;
+    if(Math.abs(a.x+a.w-b.x)<E||Math.abs(b.x+b.w-a.x)<E){lo=Math.max(a.y,b.y);hi=Math.min(a.y+a.h,b.y+b.h);if(hi-lo>0.5)return{o:"v",p:Math.abs(a.x+a.w-b.x)<E?b.x:a.x,lo:lo,hi:hi}}
+    if(Math.abs(a.y+a.h-b.y)<E||Math.abs(b.y+b.h-a.y)<E){lo=Math.max(a.x,b.x);hi=Math.min(a.x+a.w,b.x+b.w);if(hi-lo>0.5)return{o:"h",p:Math.abs(a.y+a.h-b.y)<E?b.y:a.y,lo:lo,hi:hi}}
+    return null};
+  var dr=function(a,tg,len,gap){var L=gap?Math.min(2.4,a.hi-a.lo-0.5):Math.min(len,a.hi-a.lo-0.2);if(L<0.6)L=Math.min(0.6,a.hi-a.lo);
+    var d=a.o==="v"?tg.x+tg.w/2-a.p:tg.y+tg.h/2-a.p;doors.push({o:a.o,p:a.p,c:(a.lo+a.hi)/2,L:L,n:d>0?1:-1,gap:gap})};
+  T.L.forEach(function(k){var a=adj(ID[k[0]],ID[k[1]]);if(a)dr(a,ID[k[1]],0.9,k[2]==="g");else miss++});
+  if(ms){var ow=Math.min(2.3,ms.w*.42),oh=Math.min(2.3,ms.h*.62);
+    ov={t:"bath",l:"حمام",w:ow,h:oh,x:fX?ms.x:ms.x+ms.w-ow,y:fY?ms.y+ms.h-oh:ms.y,par:ms};
+    doors.push({o:"h",p:fY?ov.y:ov.y+ov.h,c:ov.x+ov.w/2,L:0.8,n:fY?-1:1,gap:0})}
+  var enx=foy.x+foy.w/2;doors.push({o:"h",p:fY?0:D,c:enx,L:1,n:fY?1:-1,gap:0});
+  
+/* ---------- render ---------- */
+  var s=Math.min(36,400/W),pl=40,pt=34,pr=40,pb=60,VW=Math.round(W*s+pl+pr),VH=Math.round(D*s+pt+pb);
+  var X=function(m){return Math.round((pl+m*s)*10)/10},Y=function(m){return Math.round((pt+m*s)*10)/10},Sz=function(m){return Math.round(m*s*10)/10};
+  var BG="#12100c",GD="#E8D5A8",fill={rec:"rgba(198,161,91,.10)",kit:"rgba(198,161,91,.18)",sofra:"rgba(198,161,91,.12)",bath:"rgba(143,168,200,.20)",bed:"rgba(255,255,255,.04)",master:"rgba(255,255,255,.07)",maid:"rgba(255,255,255,.08)",off:"rgba(255,255,255,.08)",hall:"rgba(255,255,255,.03)",foy:"rgba(198,161,91,.07)",store:"rgba(255,255,255,.05)"};
+  var fs=Math.max(9.5,Math.min(13,s*0.42)),o=[];
+  var txt=function(cx,cy,t,sz,col,bold){return '<text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="middle" direction="ltr" font-size="'+sz+'" fill="'+col+'"'+(bold?' font-weight="700"':'')+'>'+t+'</text>'};
+  var fit=function(label,sh,pw,sz){var n=label.length,e=sz;if(n*sz*0.58>pw){e=pw/(n*0.58);if(e<8&&sh){label=sh;n=label.length;e=Math.min(sz,pw/(n*0.58))}}return e<7?null:{l:label,sz:Math.min(sz,e)}};
+  var st=' fill="none" stroke="#C6A15B" stroke-opacity=".55" stroke-width=".9"';
+  var Q=function(r,x,y,w,h,rr){return '<rect x="'+X(r.x+x)+'" y="'+Y(r.y+y)+'" width="'+Sz(w)+'" height="'+Sz(h)+'" rx="'+(rr?Sz(rr):0)+'"'+st+'/>'};
+  var C=function(r,x,y,rd){return '<circle cx="'+X(r.x+x)+'" cy="'+Y(r.y+y)+'" r="'+Sz(rd)+'"'+st+'/>'};
+  var Ln=function(r,x1,y1,x2,y2){return '<line x1="'+X(r.x+x1)+'" y1="'+Y(r.y+y1)+'" x2="'+X(r.x+x2)+'" y2="'+Y(r.y+y2)+'"'+st+'/>'};
+  var table=function(r,cx,cy,k,n){var g=Q(r,cx-.9*k,cy-.45*k,1.8*k,.9*k,.05),i;for(i=0;i<n;i++){var px=cx-.8*k+i*(1.6*k/(n-1||1));g+=Q(r,px-.2*k,cy-.45*k-.3*k,.4*k,.25*k,.05)+Q(r,px-.2*k,cy+.45*k+.05*k,.4*k,.25*k,.05)}return g};
+  var fur=function(r){var w=r.w,h=r.h,t=r.t,g="",k,ox=(t==="master"&&ov)?ov.w:0;
+    if(t==="bed"||t==="master"||t==="maid"){var bw=t==="master"?1.8:(t==="maid"?1.0:1.4);k=Math.min(1,(w-ox-.6)/(bw+1.2),(h-.4)/3.2);if(k<.5)return"";bw*=k;var x0=(w-ox-bw)/2;
+      g+=Q(r,x0,.3,bw,2*k,.05)+Ln(r,x0,.3+.18*k,x0+bw,.3+.18*k)+Q(r,x0+.1*k,.35+.1*k,bw/2-.15*k,.3*k,.08)+Q(r,x0+bw/2+.05*k,.35+.1*k,bw/2-.15*k,.3*k,.08)+Q(r,x0-.5*k,.3,.4*k,.4*k)+Q(r,x0+bw+.1*k,.3,.4*k,.4*k);
+      if(h>2*k+1.6){var ww=Math.min(w-ox-.4,2.6);g+=Q(r,.2,h-.6,ww,.5)+Ln(r,.2+ww/2,h-.6,.2+ww/2,h-.1)}}
+    else if(t==="rec"){k=Math.min(1,w/7,h/5);var cx=w*.36,sy=Math.max(1,Math.min(h-1.7*k,2.5*k+.5));
+      g+=Q(r,cx-1*k,.15,2*k,.35*k)+Q(r,cx-1.2*k,sy,2.4*k,.9*k,.15*k)+Q(r,cx-1.2*k,sy+.9*k,2.4*k,.16*k)+Q(r,cx-.5*k,sy-.95*k,1*k,.55*k,.08*k)+Q(r,cx-2.3*k,sy-.9*k,.8*k,.8*k,.15*k)+Q(r,cx+1.5*k,sy-.9*k,.8*k,.8*k,.15*k);
+      if(w>6&&h>3.5)g+=table(r,w*.76,h/2,k,3)}
+    else if(t==="kit"){k=Math.min(1,w/3,h/3);var sx=w*.3,tx=w*.62;
+      g+=Q(r,.1,.1,w-.2,.6*k)+Q(r,.1,.1+.6*k,.6*k,Math.max(.5,Math.min(h-1.1,2*k)))+Q(r,sx,.18,.8*k,.45*k,.05)+C(r,sx+.4*k,.18+.22*k,.12*k)+Q(r,tx,.14,.6*k,.52*k)+C(r,tx+.16*k,.14+.15*k,.07*k)+C(r,tx+.44*k,.14+.15*k,.07*k)+C(r,tx+.16*k,.14+.38*k,.07*k)+C(r,tx+.44*k,.14+.38*k,.07*k)}
+    else if(t==="bath"){k=Math.min(1,w/2.4,h/2.2);if(k<.4)return"";
+      g+=Q(r,w-.95*k,.1,.85*k,.85*k)+Ln(r,w-.95*k,.1,w-.1*k,.95*k)+Q(r,w/2-.2*k,h-.12-.18*k,.4*k,.18*k)+Q(r,w/2-.17*k,h-.12-.58*k,.34*k,.4*k,.17*k)+Q(r,.1,.15,.5*k,.4*k,.1*k)+C(r,.1+.25*k,.15+.2*k,.1*k)}
+    else if(t==="sofra"){k=Math.min(1,w/3.6,h/1.9);if(k<.5)return"";g+=table(r,w/2,h/2,k,3)}
+    else if(t==="off"){k=Math.min(1,w/2.6,h/2.4);g+=Q(r,.3,.3,1.5*k,.6*k)+C(r,.3+.75*k,.3+.6*k+.35*k,.25*k)+Q(r,.2,h-.5,Math.max(.8,w-.4),.35)}
+    else if(t==="store"){g+=Q(r,.15,.15,Math.max(.5,w-.3),.4)+Q(r,.15,h-.55,Math.max(.5,w-.3),.4)}
+    else if(t==="hall"&&h>3.2){g+=Q(r,w/2-.8,fY?h-.5:.15,1.6,.35)+C(r,w/2,fY?h*.62:h*.38,.35)+Q(r,.1,fY?.15:h-.5,.35,Math.min(1.4,w*.3))}
+    return g};
+  o.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+VW+' '+VH+'" width="100%" style="display:block;max-width:560px;margin:0 auto" font-family="inherit" role="img" aria-label="مخطط مقترح تقريبي">');
+  o.push('<rect width="'+VW+'" height="'+VH+'" fill="'+BG+'"/>');
+  R.forEach(function(r){o.push('<rect x="'+X(r.x)+'" y="'+Y(r.y)+'" width="'+Sz(r.w)+'" height="'+Sz(r.h)+'" fill="'+fill[r.t]+'" stroke="'+GD+'" stroke-width="2"/>')});
+  if(ov)o.push('<rect x="'+X(ov.x)+'" y="'+Y(ov.y)+'" width="'+Sz(ov.w)+'" height="'+Sz(ov.h)+'" fill="'+fill.bath+'" stroke="'+GD+'" stroke-width="2"/>');
+  o.push('<rect x="'+X(0)+'" y="'+Y(0)+'" width="'+Sz(W)+'" height="'+Sz(D)+'" fill="none" stroke="'+GD+'" stroke-width="5"/>');
+  R.concat(ov?[ov]:[]).forEach(function(r){o.push(fur(r))});
+  doors.forEach(function(d){var h=d.o==="h",L=d.L,lo=d.c-L/2,hi=d.c+L/2;
+    o.push(h?'<rect x="'+X(lo)+'" y="'+(Y(d.p)-3.5)+'" width="'+Sz(L)+'" height="7" fill="'+BG+'"/>':'<rect x="'+(X(d.p)-3.5)+'" y="'+Y(lo)+'" width="7" height="'+Sz(L)+'" fill="'+BG+'"/>');
+    if(d.gap)return;
+    var px=h?lo:d.p+d.n*L,py=h?d.p+d.n*L:lo,ex=h?hi:d.p,ey=h?d.p:hi,hx=h?lo:d.p,hy=h?d.p:lo,sw=(h?d.n:-d.n)>0?1:0;
+    o.push('<line x1="'+X(hx)+'" y1="'+Y(hy)+'" x2="'+X(px)+'" y2="'+Y(py)+'" stroke="#C6A15B" stroke-width="1.6"/><path d="M'+X(ex)+' '+Y(ey)+' A'+Sz(L)+' '+Sz(L)+' 0 0 '+sw+' '+X(px)+' '+Y(py)+'" fill="none" stroke="#C6A15B" stroke-width="1" stroke-dasharray="2 2"/>')});
+  R.forEach(function(r){
+    if(r.t==="hall"||r.t==="foy"){o.push(txt(X(r.x+r.w/2),Y(r.y+r.h/2)+(r.t==="hall"?Sz(r.h)*.22:0),r.l,Math.min(fs,11),"#8d8574"));return}
+    var big=ov&&r===ms,cy=big?Y(r.y+(fY?0:ov.h)+(r.h-ov.h)/2):Y(r.y+r.h/2),hh=big?r.h-ov.h:r.h,f=fit(r.l,r.s,Sz(r.w)-6,fs);if(!f)return;
+    o.push(txt(X(r.x+r.w/2),cy+(r.t==="rec"?Sz(r.h)*.32:(r.t==="bed"||r.t==="master"||r.t==="maid")?Sz(hh)*.28:0),f.l,f.sz,"#f4efe6",1));
+    if(Sz(r.w)>58&&Sz(hh)>46&&(r.t==="rec"||r.t==="bed"||r.t==="master"||r.t==="maid"))o.push(txt(X(r.x+r.w/2),cy+(r.t==="rec"?Sz(r.h)*.32:Sz(hh)*.28)+13,(Math.round(r.w*10)/10).toFixed(1)+"×"+(Math.round(r.h*10)/10).toFixed(1),Math.max(8,fs-3),"#a89f8d"))});
+  if(ov){var f2=fit(ov.l,"",Sz(ov.w)-4,Math.min(fs,10.5));if(f2)o.push(txt(X(ov.x+ov.w/2),Y(ov.y+ov.h/2),f2.l,f2.sz,"#f4efe6",1))}
+  /* entrance arrow */
+  var ax=X(enx),ay=fY?Y(0)-9:Y(D)+9;
+  o.push('<path d="M'+ax+' '+ay+' l-5 8 h10 z" fill="#C6A15B" transform="rotate('+(fY?180:0)+' '+ax+' '+(ay+4)+')"/>'+txt(ax,fY?ay-10:ay+22,"المدخل",10,GD,1));
+  /* overall dimensions */
+  var by=Y(D)+(fY?22:44);
+  o.push('<line x1="'+X(0)+'" y1="'+by+'" x2="'+X(W)+'" y2="'+by+'" stroke="#9C7D42"/><line x1="'+X(0)+'" y1="'+(by-4)+'" x2="'+X(0)+'" y2="'+(by+4)+'" stroke="#9C7D42"/><line x1="'+X(W)+'" y1="'+(by-4)+'" x2="'+X(W)+'" y2="'+(by+4)+'" stroke="#9C7D42"/>'+txt(X(W/2),by+11,W.toFixed(1)+" م",9.5,"#d8c590"));
+  var rx=X(W)+16;
+  o.push('<line x1="'+rx+'" y1="'+Y(0)+'" x2="'+rx+'" y2="'+Y(D)+'" stroke="#9C7D42"/><line x1="'+(rx-4)+'" y1="'+Y(0)+'" x2="'+(rx+4)+'" y2="'+Y(0)+'" stroke="#9C7D42"/><line x1="'+(rx-4)+'" y1="'+Y(D)+'" x2="'+(rx+4)+'" y2="'+Y(D)+'" stroke="#9C7D42"/><text x="'+(rx+11)+'" y="'+Y(D/2)+'" text-anchor="middle" dominant-baseline="middle" direction="ltr" font-size="9.5" fill="#d8c590" transform="rotate(90 '+(rx+11)+' '+Y(D/2)+')">'+D.toFixed(1)+" م</text>");
+  o.push("</svg>");
+  return {svg:o.join(""),rooms:R,W:W,D:D,miss:miss,doors:doors};
+}
+
+
+
+function PLAN2(A,O){
+var o=O||{},cl=function(v,a,b,d){v=Math.round(+v);return isNaN(v)?d:Math.max(a,Math.min(b,v))};
+var n=cl(o.rooms,2,5,3),nb=cl(o.baths,1,3,2),e=n-1,kit=(o.kitchen==="closed"||o.kitchen==="american")?o.kitchen:"open",M=o.master||{},wd=!!M.dress,mb=!!M.bath,big=M.size==="big",rc=(o.recep==="closed"||o.recep==="living")?o.recep:"open";
+var sm=A<=80,din=A>=120,liv=rc==="living",base=A<=80?1.15:A<=130?1.25:A<=220?1.3:1.35;
+var t={ms:big?21:15,dr:big?7:4.5,bd:11.5,ba:4,kt:9,dn:10,lv:13,rc:rc==="closed"?18:liv?15:20,fy:6,hl:9};
+var Sfix=t.ms+(wd?t.dr:0)+e*t.bd+nb*t.ba+t.kt+(din?t.dn:0),Sfl=t.rc+(liv?t.lv:0)+t.fy+t.hl;
+var cs=function(L){return L.reduce(function(s,q){return s+q.a},0)};
+var ovl=function(a,b){var E=.05,l;if(Math.abs(a.x+a.w-b.x)<E||Math.abs(b.x+b.w-a.x)<E){l=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);if(l>0)return l}
+ if(Math.abs(a.y+a.h-b.y)<E||Math.abs(b.y+b.h-a.y)<E){l=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);if(l>0)return l}return 0};
+var G=function(rr,fs,kb,lb){
+var why=[],bad=0,pen=Math.abs(rr-base)*4,i,j,W=Math.round(Math.sqrt(A*rr)*10)/10,D=Math.round(A/W*10)/10;
+var kl=Math.min(2.1,Math.max(.6,fs*A/Sfl)),kf=(A-kl*Sfl)/Sfix;
+if(kf<.62||kf>3.6){bad++;why.push("المساحة غير مناسبة للاختيارات")}
+var mk=function(id,ty,lb2,k,fx,sh){return{id:id,t:ty,l:lb2,s:sh,a:t[k]*(fx?kf:kl)}};
+var rw=function(){var s=[].slice.call(arguments);return{subs:s,a:s.reduce(function(x,q){return x+q.a},0)}};
+var bm=[],ex=[],rb=e-lb,Lc=[],Rc=[],lbeds=[],rbeds=[],lch=[];
+for(i=1;i<=nb;i++){var bq=mk("ba"+i,"bath",nb>1?"حمام "+i:"حمام","ba",1,"حمام");(i<=kb?bm:ex).push(bq)}
+for(i=0;i<rb;i++)rbeds.push(mk("b"+i,"bed","غرفة "+(lb+i+2),"bd",1,"غرفة"));
+for(i=0;i<lb;i++)lbeds.push(mk("l"+i,"bed","غرفة "+(i+2),"bd",1,"غرفة"));
+if(ex.length>rbeds.length+lbeds.length){bad++;why.push("حمامات أكتر من اللازم")}
+var bl=rbeds.concat(lbeds);ex.forEach(function(q,k){if(bl[k]){bl[k].eb=q}});
+var bro=function(q){return q.eb?rw(q,q.eb):rw(q)};
+lbeds.forEach(function(q){Lc.push(bro(q))});
+Lc.push(rw(mk("k","kit","مطبخ","kt",1)));if(din)Lc.push(rw(mk("din","sofra","سفرة","dn",1)));if(liv)Lc.push(rw(mk("lv","rec","ليفينج","lv")));Lc.push(rw(mk("rec","rec","ريسبشن","rc",0)));
+Rc.push(wd?rw(mk("ms","master","ماستر","ms",1),mk("dr","dress","دريسنج","dr",1)):rw(mk("ms","master","ماستر","ms",1)));
+rbeds.forEach(function(q){Rc.push(bro(q))});
+lch=Lc.map(function(r){return r.subs[0]});
+var brow={a:cs(bm)},Mc=[brow,mk("h","hall","ردهة","hl"),mk("f","foy","توزيع","fy")];
+var w=[W*cs(Lc)/A,W*cs(Mc)/A,0],mn=[sm?2.6:3,sm?1.5:2.4,sm?2.6:3];w[2]=W-w[0]-w[1];
+for(i=0;i<3;i++)if(w[i]<mn[i]){var df=mn[i]-w[i],mx=-1;w[i]=mn[i];for(j=0;j<3;j++)if(j!==i&&(mx<0||w[j]>w[mx]))mx=j;w[mx]-=df}
+for(i=0;i<3;i++)if(w[i]<mn[i]-.01){bad++;why.push("العرض ضيق");break}
+var stk=function(L,x0,w0,top){var tot=cs(L),hs=L.map(function(q){return D*q.a/tot});
+ if(top&&hs.length>1&&hs[0]<top){var rest=D-top,o2=D-hs[0];for(var k=1;k<hs.length;k++)hs[k]=hs[k]*rest/o2;hs[0]=top}
+ var y=0;L.forEach(function(q,k){q.x=x0;q.w=w0;q.y=y;q.h=hs[k];y+=hs[k]});return hs[0]};
+var hb=stk(Mc,w[0],w[1],0);bm.forEach(function(q,k){q.x=brow.x+k*brow.w/kb;q.w=brow.w/kb;q.y=brow.y;q.h=brow.h});
+stk(Lc,0,w[0],(lb||kit==="closed")?hb+1.1:0);stk(Rc,w[0]+w[1],w[2],hb+1.1);
+var lay=function(r,dir){var W0=r.w,ws=r.subs.map(function(q){return W0*q.a/r.a}),k=ws.length,z,x;
+ for(z=1;z<k;z++){var mw=r.subs[z].t==="dress"?1.8:1.6;if(ws[z]<mw){ws[0]-=mw-ws[z];ws[z]=mw}}
+ x=dir>0?r.x:r.x+W0;r.subs.forEach(function(q,z2){q.w=ws[z2];q.h=r.h;q.y=r.y;q.x=dir>0?x:x-ws[z2];x+=dir*ws[z2]})};
+Lc.forEach(function(r){lay(r,-1)});Rc.forEach(function(r){lay(r,1)});
+var fq=Mc[2],hq=Mc[1],nf=Math.max(1.2,Math.min(fq.h,Rc[Rc.length-1].h-1.15));if(nf<fq.h){hq.h+=fq.h-nf;fq.h=nf;fq.y=D-nf}
+var fl=function(Z){return Z.reduce(function(s,r){return s.concat(r.subs)},[])},all=fl(Lc).concat(bm,Mc.slice(1),fl(Rc)),ID={};all.forEach(function(q){ID[q.id]=q});
+var mins={bed:[2.4,8],master:[3,11],bath:[1.3,2.8],kit:[2,6],rec:[3,9],sofra:[2.2,6],dress:[1.5,3.5],foy:[1.4,3.5],hall:[1.2,0]},f=sm?.88:1;
+all.forEach(function(q){var m=mins[q.t];if(!m)return;var s=Math.min(q.w,q.h),g=Math.max(q.w,q.h),as=g/s,hf=q.t==="hall"||q.t==="foy";
+ if(s<m[0]*f||q.w*q.h<m[1]*f*f||as>(hf?5.5:3.6)){bad++;why.push(q.l)}
+ pen+=Math.pow(Math.max(0,as-(hf?3:2.2)),2)+2*Math.pow(Math.log(q.w*q.h/q.a),2)});
+if(mb){var m=ID.ms,ow=Math.min(2.3,m.w*.42),oh=Math.min(2.3,m.h*.62);if(m.w-ow<2.4*f||m.h<3.2*f||m.w*m.h<13*f){bad++;why.push("الماستر صغيرة على الحمام الداخلي")}}
+var nx=function(a){return lch[lch.indexOf(ID[a])+1].id},L=[["f","h","d"],["f","rec",rc==="open"?"g":"d"]];
+if(kit==="closed"||(rc==="closed"&&nx("k")==="rec"))L.push(["h","k","d"]);
+if(kit!=="closed"&&(nx("k")!=="rec"||rc!=="closed"))L.push(["k",nx("k"),kit==="open"?"o":"g"]);
+if(din){L.push(["din",nx("din"),"g"]);if(rc==="closed")L.push(["h","din","d"])}
+if(liv)L.push(["h","lv","g"]);
+Rc.concat(Lc).forEach(function(r){var q=r.subs[0];if(q.t==="master"||q.t==="bed")L.push(["h",q.id,"d"]);if(r.subs[1])L.push([q.id,r.subs[1].id,"d"])});
+bm.forEach(function(q){L.push(["h",q.id,"d"])});
+L.forEach(function(k){if(ovl(ID[k[0]],ID[k[1]])<(k[2]==="d"?1.1:1.4)){bad++;why.push("ممر "+ID[k[1]].l)}});
+var R=all.map(function(q){return[q.id,q.t,q.l,q.x/W,q.y/D,(q.x+q.w)/W,(q.y+q.h)/D,q.s]});
+return{bad:bad,why:why,pen:pen,T:{r:rr,R:R,L:L,fx:(A>80&&A<=130)||A>220,fy:A>130,mb:mb,bad:0,why:why}}};
+var best=null,fb=null,rrs=[base,1.0,1.15,1.3,1.45,1.6,1.8],fss=[.34,.28,.4,.22,.46],g,a1,a2,a3,a4;
+for(a1=0;a1<rrs.length;a1++)for(a2=0;a2<fss.length;a2++)for(a3=1;a3<=Math.min(nb,3);a3++)for(a4=0;a4<=e;a4++){
+ g=G(rrs[a1],fss[a2],a3,a4);if(!fb||g.bad<fb.bad)fb=g;if(!g.bad&&(!best||g.pen<best.pen))best=g}
+var T=(best||fb).T;T.bad=best?0:fb.bad;
+  var W=Math.round(Math.sqrt(A*T.r)*10)/10,D=Math.round(A/W*10)/10;
+  var fX=T.fx,fY=T.fy,R=[],ID={},doors=[],ov=null,E=0.03,miss=0;
+  T.R.forEach(function(q){var x=q[3]*W,w=(q[5]-q[3])*W,y=q[4]*D,h=(q[6]-q[4])*D;
+    var r={id:q[0],t:q[1],l:q[2],s:q[7],w:w,h:h,x:fX?W-x-w:x,y:fY?D-y-h:y};R.push(r);ID[r.id]=r});
+  var rec=ID.rec,hall=ID.h,foy=ID.f,ms=R.filter(function(r){return r.t==="master"})[0];
+  var adj=function(a,b){var lo,hi;
+    if(Math.abs(a.x+a.w-b.x)<E||Math.abs(b.x+b.w-a.x)<E){lo=Math.max(a.y,b.y);hi=Math.min(a.y+a.h,b.y+b.h);if(hi-lo>0.5)return{o:"v",p:Math.abs(a.x+a.w-b.x)<E?b.x:a.x,lo:lo,hi:hi}}
+    if(Math.abs(a.y+a.h-b.y)<E||Math.abs(b.y+b.h-a.y)<E){lo=Math.max(a.x,b.x);hi=Math.min(a.x+a.w,b.x+b.w);if(hi-lo>0.5)return{o:"h",p:Math.abs(a.y+a.h-b.y)<E?b.y:a.y,lo:lo,hi:hi}}
+    return null};
+  var dr=function(a,tg,len,gap){var L=gap===2?Math.max(1,a.hi-a.lo-0.3):gap?Math.min(2.4,a.hi-a.lo-0.5):Math.min(len,a.hi-a.lo-0.2);if(L<0.6)L=Math.min(0.6,a.hi-a.lo);
+    var d=a.o==="v"?tg.x+tg.w/2-a.p:tg.y+tg.h/2-a.p;doors.push({o:a.o,p:a.p,c:(a.lo+a.hi)/2,L:L,n:d>0?1:-1,gap:gap})};
+  T.L.forEach(function(k){var a=adj(ID[k[0]],ID[k[1]]);if(a)dr(a,ID[k[1]],0.9,k[2]==="o"?2:k[2]==="g");else miss++});
+  if(ms&&T.mb){var ow=Math.min(2.3,ms.w*.42),oh=Math.min(2.3,ms.h*.62);
+    ov={t:"bath",l:"حمام",w:ow,h:oh,x:fX?ms.x:ms.x+ms.w-ow,y:fY?ms.y+ms.h-oh:ms.y,par:ms};
+    doors.push({o:"h",p:fY?ov.y:ov.y+ov.h,c:ov.x+ov.w/2,L:0.8,n:fY?-1:1,gap:0})}
+  var enx=foy.x+foy.w/2;doors.push({o:"h",p:fY?0:D,c:enx,L:1,n:fY?1:-1,gap:0});
+  
+/* ---------- render ---------- */
+  var s=Math.min(36,400/W),pl=40,pt=34,pr=40,pb=60,VW=Math.round(W*s+pl+pr),VH=Math.round(D*s+pt+pb);
+  var X=function(m){return Math.round((pl+m*s)*10)/10},Y=function(m){return Math.round((pt+m*s)*10)/10},Sz=function(m){return Math.round(m*s*10)/10};
+  var BG="#12100c",GD="#E8D5A8",fill={rec:"rgba(198,161,91,.10)",kit:"rgba(198,161,91,.18)",sofra:"rgba(198,161,91,.12)",bath:"rgba(143,168,200,.20)",bed:"rgba(255,255,255,.04)",master:"rgba(255,255,255,.07)",maid:"rgba(255,255,255,.08)",off:"rgba(255,255,255,.08)",hall:"rgba(255,255,255,.03)",foy:"rgba(198,161,91,.07)",store:"rgba(255,255,255,.05)",dress:"rgba(255,255,255,.06)"};
+  var fs=Math.max(9.5,Math.min(13,s*0.42)),o=[];
+  var txt=function(cx,cy,t,sz,col,bold){return '<text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="middle" direction="ltr" font-size="'+sz+'" fill="'+col+'"'+(bold?' font-weight="700"':'')+'>'+t+'</text>'};
+  var fit=function(label,sh,pw,sz){var n=label.length,e=sz;if(n*sz*0.58>pw){e=pw/(n*0.58);if(e<8&&sh){label=sh;n=label.length;e=Math.min(sz,pw/(n*0.58))}}return e<7?null:{l:label,sz:Math.min(sz,e)}};
+  var st=' fill="none" stroke="#C6A15B" stroke-opacity=".55" stroke-width=".9"';
+  var Q=function(r,x,y,w,h,rr){return '<rect x="'+X(r.x+x)+'" y="'+Y(r.y+y)+'" width="'+Sz(w)+'" height="'+Sz(h)+'" rx="'+(rr?Sz(rr):0)+'"'+st+'/>'};
+  var C=function(r,x,y,rd){return '<circle cx="'+X(r.x+x)+'" cy="'+Y(r.y+y)+'" r="'+Sz(rd)+'"'+st+'/>'};
+  var Ln=function(r,x1,y1,x2,y2){return '<line x1="'+X(r.x+x1)+'" y1="'+Y(r.y+y1)+'" x2="'+X(r.x+x2)+'" y2="'+Y(r.y+y2)+'"'+st+'/>'};
+  var table=function(r,cx,cy,k,n){var g=Q(r,cx-.9*k,cy-.45*k,1.8*k,.9*k,.05),i;for(i=0;i<n;i++){var px=cx-.8*k+i*(1.6*k/(n-1||1));g+=Q(r,px-.2*k,cy-.45*k-.3*k,.4*k,.25*k,.05)+Q(r,px-.2*k,cy+.45*k+.05*k,.4*k,.25*k,.05)}return g};
+  var fur=function(r){var w=r.w,h=r.h,t=r.t,g="",k,ox=(t==="master"&&ov)?ov.w:0;
+    if(t==="bed"||t==="master"||t==="maid"){var bw=t==="master"?1.8:(t==="maid"?1.0:1.4);k=Math.min(1,(w-ox-.6)/(bw+1.2),(h-.4)/3.2);if(k<.5)return"";bw*=k;var x0=(w-ox-bw)/2;
+      g+=Q(r,x0,.3,bw,2*k,.05)+Ln(r,x0,.3+.18*k,x0+bw,.3+.18*k)+Q(r,x0+.1*k,.35+.1*k,bw/2-.15*k,.3*k,.08)+Q(r,x0+bw/2+.05*k,.35+.1*k,bw/2-.15*k,.3*k,.08)+Q(r,x0-.5*k,.3,.4*k,.4*k)+Q(r,x0+bw+.1*k,.3,.4*k,.4*k);
+      if(h>2*k+1.6){var ww=Math.min(w-ox-.4,2.6);g+=Q(r,.2,h-.6,ww,.5)+Ln(r,.2+ww/2,h-.6,.2+ww/2,h-.1)}}
+    else if(t==="rec"){k=Math.min(1,w/7,h/5);var cx=w*.36,sy=Math.max(1,Math.min(h-1.7*k,2.5*k+.5));
+      g+=Q(r,cx-1*k,.15,2*k,.35*k)+Q(r,cx-1.2*k,sy,2.4*k,.9*k,.15*k)+Q(r,cx-1.2*k,sy+.9*k,2.4*k,.16*k)+Q(r,cx-.5*k,sy-.95*k,1*k,.55*k,.08*k)+Q(r,cx-2.3*k,sy-.9*k,.8*k,.8*k,.15*k)+Q(r,cx+1.5*k,sy-.9*k,.8*k,.8*k,.15*k);
+      if(w>6&&h>3.5)g+=table(r,w*.76,h/2,k,3)}
+    else if(t==="kit"){k=Math.min(1,w/3,h/3);var sx=w*.3,tx=w*.62;
+      g+=Q(r,.1,.1,w-.2,.6*k)+Q(r,.1,.1+.6*k,.6*k,Math.max(.5,Math.min(h-1.1,2*k)))+Q(r,sx,.18,.8*k,.45*k,.05)+C(r,sx+.4*k,.18+.22*k,.12*k)+Q(r,tx,.14,.6*k,.52*k)+C(r,tx+.16*k,.14+.15*k,.07*k)+C(r,tx+.44*k,.14+.15*k,.07*k)+C(r,tx+.16*k,.14+.38*k,.07*k)+C(r,tx+.44*k,.14+.38*k,.07*k)}
+    else if(t==="bath"){k=Math.min(1,w/2.4,h/2.2);if(k<.4)return"";
+      g+=Q(r,w-.95*k,.1,.85*k,.85*k)+Ln(r,w-.95*k,.1,w-.1*k,.95*k)+Q(r,w/2-.2*k,h-.12-.18*k,.4*k,.18*k)+Q(r,w/2-.17*k,h-.12-.58*k,.34*k,.4*k,.17*k)+Q(r,.1,.15,.5*k,.4*k,.1*k)+C(r,.1+.25*k,.15+.2*k,.1*k)}
+    else if(t==="sofra"){k=Math.min(1,w/3.6,h/1.9);if(k<.5)return"";g+=table(r,w/2,h/2,k,3)}
+    else if(t==="off"){k=Math.min(1,w/2.6,h/2.4);g+=Q(r,.3,.3,1.5*k,.6*k)+C(r,.3+.75*k,.3+.6*k+.35*k,.25*k)+Q(r,.2,h-.5,Math.max(.8,w-.4),.35)}
+    else if(t==="store"||t==="dress"){g+=Q(r,.15,.15,Math.max(.5,w-.3),.4)+Q(r,.15,h-.55,Math.max(.5,w-.3),.4)}
+    else if(t==="hall"&&h>3.2){g+=Q(r,w/2-.8,fY?h-.5:.15,1.6,.35)+C(r,w/2,fY?h*.62:h*.38,.35)+Q(r,.1,fY?.15:h-.5,.35,Math.min(1.4,w*.3))}
+    return g};
+  o.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+VW+' '+VH+'" width="100%" style="display:block;max-width:560px;margin:0 auto" font-family="inherit" role="img" aria-label="مخطط مقترح تقريبي">');
+  o.push('<rect width="'+VW+'" height="'+VH+'" fill="'+BG+'"/>');
+  R.forEach(function(r){o.push('<rect x="'+X(r.x)+'" y="'+Y(r.y)+'" width="'+Sz(r.w)+'" height="'+Sz(r.h)+'" fill="'+fill[r.t]+'" stroke="'+GD+'" stroke-width="2"/>')});
+  if(ov)o.push('<rect x="'+X(ov.x)+'" y="'+Y(ov.y)+'" width="'+Sz(ov.w)+'" height="'+Sz(ov.h)+'" fill="'+fill.bath+'" stroke="'+GD+'" stroke-width="2"/>');
+  o.push('<rect x="'+X(0)+'" y="'+Y(0)+'" width="'+Sz(W)+'" height="'+Sz(D)+'" fill="none" stroke="'+GD+'" stroke-width="5"/>');
+  R.concat(ov?[ov]:[]).forEach(function(r){o.push(fur(r))});
+  doors.forEach(function(d){var h=d.o==="h",L=d.L,lo=d.c-L/2,hi=d.c+L/2;
+    o.push(h?'<rect x="'+X(lo)+'" y="'+(Y(d.p)-3.5)+'" width="'+Sz(L)+'" height="7" fill="'+BG+'"/>':'<rect x="'+(X(d.p)-3.5)+'" y="'+Y(lo)+'" width="7" height="'+Sz(L)+'" fill="'+BG+'"/>');
+    if(d.gap)return;
+    var px=h?lo:d.p+d.n*L,py=h?d.p+d.n*L:lo,ex=h?hi:d.p,ey=h?d.p:hi,hx=h?lo:d.p,hy=h?d.p:lo,sw=(h?d.n:-d.n)>0?1:0;
+    o.push('<line x1="'+X(hx)+'" y1="'+Y(hy)+'" x2="'+X(px)+'" y2="'+Y(py)+'" stroke="#C6A15B" stroke-width="1.6"/><path d="M'+X(ex)+' '+Y(ey)+' A'+Sz(L)+' '+Sz(L)+' 0 0 '+sw+' '+X(px)+' '+Y(py)+'" fill="none" stroke="#C6A15B" stroke-width="1" stroke-dasharray="2 2"/>')});
+  R.forEach(function(r){
+    if(r.t==="hall"||r.t==="foy"){o.push(txt(X(r.x+r.w/2),Y(r.y+r.h/2)+(r.t==="hall"?Sz(r.h)*.22:0),r.l,Math.min(fs,11),"#8d8574"));return}
+    var big=ov&&r===ms,cy=big?Y(r.y+(fY?0:ov.h)+(r.h-ov.h)/2):Y(r.y+r.h/2),hh=big?r.h-ov.h:r.h,f=fit(r.l,r.s,Sz(r.w)-6,fs);if(!f)return;
+    o.push(txt(X(r.x+r.w/2),cy+(r.t==="rec"?Sz(r.h)*.32:(r.t==="bed"||r.t==="master"||r.t==="maid")?Sz(hh)*.28:0),f.l,f.sz,"#f4efe6",1));
+    if(Sz(r.w)>58&&Sz(hh)>46&&(r.t==="rec"||r.t==="bed"||r.t==="master"||r.t==="maid"))o.push(txt(X(r.x+r.w/2),cy+(r.t==="rec"?Sz(r.h)*.32:Sz(hh)*.28)+13,(Math.round(r.w*10)/10).toFixed(1)+"×"+(Math.round(r.h*10)/10).toFixed(1),Math.max(8,fs-3),"#a89f8d"))});
+  if(ov){var f2=fit(ov.l,"",Sz(ov.w)-4,Math.min(fs,10.5));if(f2)o.push(txt(X(ov.x+ov.w/2),Y(ov.y+ov.h/2),f2.l,f2.sz,"#f4efe6",1))}
+  /* entrance arrow */
+  var ax=X(enx),ay=fY?Y(0)-9:Y(D)+9;
+  o.push('<path d="M'+ax+' '+ay+' l-5 8 h10 z" fill="#C6A15B" transform="rotate('+(fY?180:0)+' '+ax+' '+(ay+4)+')"/>'+txt(ax,fY?ay-10:ay+22,"المدخل",10,GD,1));
+  /* overall dimensions */
+  var by=Y(D)+(fY?22:44);
+  o.push('<line x1="'+X(0)+'" y1="'+by+'" x2="'+X(W)+'" y2="'+by+'" stroke="#9C7D42"/><line x1="'+X(0)+'" y1="'+(by-4)+'" x2="'+X(0)+'" y2="'+(by+4)+'" stroke="#9C7D42"/><line x1="'+X(W)+'" y1="'+(by-4)+'" x2="'+X(W)+'" y2="'+(by+4)+'" stroke="#9C7D42"/>'+txt(X(W/2),by+11,W.toFixed(1)+" م",9.5,"#d8c590"));
+  var rx=X(W)+16;
+  o.push('<line x1="'+rx+'" y1="'+Y(0)+'" x2="'+rx+'" y2="'+Y(D)+'" stroke="#9C7D42"/><line x1="'+(rx-4)+'" y1="'+Y(0)+'" x2="'+(rx+4)+'" y2="'+Y(0)+'" stroke="#9C7D42"/><line x1="'+(rx-4)+'" y1="'+Y(D)+'" x2="'+(rx+4)+'" y2="'+Y(D)+'" stroke="#9C7D42"/><text x="'+(rx+11)+'" y="'+Y(D/2)+'" text-anchor="middle" dominant-baseline="middle" direction="ltr" font-size="9.5" fill="#d8c590" transform="rotate(90 '+(rx+11)+' '+Y(D/2)+')">'+D.toFixed(1)+" م</text>");
+  o.push("</svg>");
+  return {svg:o.join(""),rooms:R,W:W,D:D,miss:miss+T.bad,why:T.why,doors:doors};
+}
+
+var $=function(i){return document.getElementById(i)};
+function defOpts(A){return{rooms:A<=80?2:A<=130?3:A<=220?4:5,baths:A<=80?1:A<=130?2:3,kitchen:"open",master:{dress:A>130,bath:A>100,size:A>220?"big":"normal"},recep:A>220?"living":"open"}}
+function setOpts(o){$("rooms").value=o.rooms;$("baths").value=o.baths;$("kitchen").value=o.kitchen;$("dress").value=o.master.dress?1:0;$("mbath").value=o.master.bath?1:0;$("msize").value=o.master.size;$("recep").value=o.recep}
+function getOpts(){return{rooms:+$("rooms").value,baths:+$("baths").value,kitchen:$("kitchen").value,master:{dress:$("dress").value==="1",bath:$("mbath").value==="1",size:$("msize").value},recep:$("recep").value}}
+function run(){var A=+$("a").value;$("av").textContent=A;var o=getOpts(),r;
+ try{r=PLAN2(A,o)}catch(x){r={miss:99,why:["خطأ: "+x.message],svg:""}}
+ var ok=r.miss===0;$("st").className=ok?"ok":"no";
+ $("st").textContent=ok?"✅ الجديد سليم (miss = 0) وهو اللي هيظهر للعميل":"⚠️ الجديد مش مناسب (miss = "+r.miss+") فهيظهر المخطط القديم تلقائياً. السبب: "+(r.why||[]).slice(0,4).join("، ");
+ $("nw").innerHTML=r.svg||"";$("od").innerHTML=PLAN(A).svg}
+["a","rooms","baths","kitchen","dress","mbath","msize","recep"].forEach(function(i){$(i).addEventListener("input",run)});
+$("sg").onclick=function(){setOpts(defOpts(+$("a").value));run()};
+setOpts(defOpts(100));run();
+</script></body></html>
